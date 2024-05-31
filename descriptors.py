@@ -108,25 +108,27 @@ def shuffle_data(X, y):
 
 if __name__ == "__main__":
 
-    sequences, y, classes = load_data("data/deeploc_per_protein_train.csv")
+    # sequences, y, classes = load_data("data/deeploc_per_protein_train.csv")
 
-    print(len(sequences))
+    # print(len(sequences))
 
-    features, desc_names, feature_names = extract_descriptors(sequences)
+    # features, desc_names, feature_names = extract_descriptors(sequences)
 
-    print(features.shape)
+    # print(features.shape)
 
-    np.save("descriptors_train_ac.npy", [features, desc_names, feature_names], allow_pickle=True)
+    # np.save("descriptors_train_ac.npy", [features, desc_names, feature_names], allow_pickle=True)
 
     # features, desc_names, feature_names = np.load("descriptors_train.npy", allow_pickle=True)
 
 
     # DATA
 
-    # sequences_train, y_train, classes = load_data("data/deeploc_per_protein_train.csv")
-    # X_train, _, ft_names_train = np.load("descriptors_train.npy", allow_pickle=True)
-    # sequences_test, y_test, classes = load_data("data/deeploc_per_protein_test.csv")
-    # X_test, _, ft_names_test = np.load("descriptors_test.npy", allow_pickle=True)
+    sequences_train, y_train, classes = load_data("data/deeploc_per_protein_train.csv")
+    X_train, desc_names, ft_names = np.load("descriptors_train_ac.npy", allow_pickle=True)
+    sequences_test, y_test, classes = load_data("data/deeploc_per_protein_test.csv")
+    X_test, _, _ = np.load("descriptors_test_ac.npy", allow_pickle=True)
+
+    print(desc_names)
 
     # #X_train, y_train = shuffle_data(X_train, y_train)
     # #X_test, y_test = shuffle_data(X_test, y_test)
@@ -134,30 +136,30 @@ if __name__ == "__main__":
     # print(len(X_train), len(X_test))
 
 
-    # # CLASSIFIERS
+    # CLASSIFIERS
 
-    # #clf = RandomForestClassifier()
-    # clf = SVC(C=2)
-    # #clf = MLPClassifier()
+    #clf = RandomForestClassifier()
+    #clf = SVC(C=2)
+    clf = MLPClassifier()
 
-    # # DIM REDUCTION
+    # DIM REDUCTION
 
-    # proj_model = PCA(n_components=500)
-    # #proj_model = RFE(estimator=clf, n_features_to_select=1000, verbose=True)
-    # #proj_model = SelectKBest(k=1000)
-    # #clf = clf.fit(features, y)
-    # X_train = proj_model.fit_transform(X_train, y=y_train)
-    # X_test = proj_model.transform(X_test)
-
-
-    # clf.fit(X_train, y_train)
+    proj_model = PCA(n_components=500)
+    #proj_model = RFE(estimator=clf, n_features_to_select=1000, verbose=True)
+    #proj_model = SelectKBest(k=1000)
+    #clf = clf.fit(features, y)
+    X_train = proj_model.fit_transform(X_train, y=y_train)
+    X_test = proj_model.transform(X_test)
 
 
-    # pred = clf.predict(X_test)
-    # #pred = np.random.choice([0,1,2], size=(len(y),))
-    # ca = accuracy_score(y_test, pred)
+    clf.fit(X_train, y_train)
 
-    # print(ca)
+
+    pred = clf.predict(X_test)
+    #pred = np.random.choice([0,1,2], size=(len(y),))
+    ca = accuracy_score(y_test, pred)
+
+    print(ca)
 
 
 
