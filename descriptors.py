@@ -7,7 +7,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.feature_selection import RFE, RFECV, SelectKBest
 
-from propy import PyPro, CTD, PseudoAAC
+from propy import PyPro, CTD, PseudoAAC, Autocorrelation
 import pfeature
 
 
@@ -18,7 +18,10 @@ def load_data(path, shuf=False):
 
     df = pd.read_csv(path)
     df["input"] = df["input"].apply(lambda x: x.strip().replace(" ", ""))
-    df = df[df["membrane"] != "U"] # remove uknown targets
+    df = df[df["membrane"] != "U"] # remove seq with unknown targets
+    df = df[~df["input"].str.contains("X")] # remove seq with unknown aminoacids
+    df = df[~df["input"].str.contains("U")] # remove seq with unknown selenocystine
+    df = df[~df["input"].str.contains("B")]
 
     if shuf:
         df = df.iloc[np.random.RandomState(42).permutation(len(df)), :]
@@ -57,22 +60,25 @@ def extract_descriptors(sequences):
         descriptors = {
             # aminoacid composition
             "aminoacid_comp": desc.GetAAComp(),
-            "dipeptide_comp": desc.GetDPComp(),
-            "tripeptide_comp": desc.GetTPComp(),
+            #"dipeptide_comp": desc.GetDPComp(),
+            #"tripeptide_comp": desc.GetTPComp(),
             # autocorrelation
+            "moreau-broto_hidro": Autocorrelation.CalculateNormalizedMoreauBrotoAutoHydrophobicity(sequence),
+            "moran_hidro": Autocorrelation.CalculateMoranAutoHydrophobicity(sequence),
+            "geary_hidro": Autocorrelation.CalculateGearyAutoHydrophobicity(sequence),
             #"moreau-broto": desc.GetMoreauBrotoAuto(),
             #"moran": desc.GetMoranAuto(),
-            #"broto": desc.GetGearyAuto(),
+            #"geary": desc.GetGearyAuto(),
             # CTD composition, transition, distribution
-            "ctd_all": desc.GetCTD(),
+            #"ctd_all": desc.GetCTD(),
             # conjoined triad
             #"conjoint_triad": pfeature.CalcConjointTriad(sequence),
             # sequence order
             ##"so_coupling_num": desc.GetSOCN(),
             ##"so_quasi": desc.GetQSO(),
             # pseudo aminoacid composition
-            ##"type_i_paac": desc.GetPAAC(),
-            ##"type_ii_paac": PseudoAAC.GetAPseudoAAC(sequence),
+            #"type_i_paac": desc.GetPAAC(),
+            #"type_ii_paac": PseudoAAC.GetAPseudoAAC(sequence),
         }
 
 
@@ -90,7 +96,7 @@ def extract_descriptors(sequences):
 
 
 def train_test_split(X, y, ratio=0.7):
-    split = int(len(features)*0.7)
+    split = int(len(X)*ratio)
     X_train = X[:split]; X_test = X[split:]
     y_train = y[:split]; y_test = y[split:]
 
@@ -105,13 +111,15 @@ def shuffle_data(X, y):
 
 if __name__ == "__main__":
 
-    sequences, y, classes = load_data("data/deeploc_per_protein_test.csv")
+    # sequences, y, classes = load_data("data/deeploc_per_protein_test.csv")
 
-    print(len(sequences))
+    # print(len(sequences))
 
-    #features, desc_names, feature_names = extract_descriptors(sequences)
+    # features, desc_names, feature_names = extract_descriptors(sequences)
 
-    #np.save("descriptors_test.npy", [features, desc_names, feature_names], allow_pickle=True)
+    # print(features.shape)
+
+    # np.save("descriptors_test_domain.npy", [features, desc_names, feature_names], allow_pickle=True)
 
     # features, desc_names, feature_names = np.load("descriptors_train.npy", allow_pickle=True)
 
@@ -119,12 +127,17 @@ if __name__ == "__main__":
     # DATA
 
     sequences_train, y_train, classes = load_data("data/deeploc_per_protein_train.csv")
-    X_train, _, _ = np.load("descriptors_test.npy", allow_pickle=True)
+    X_train, desc_names, ft_names = np.load("descriptors_train_ac.npy", allow_pickle=True)
     sequences_test, y_test, classes = load_data("data/deeploc_per_protein_test.csv")
-    X_test, _, _ = np.load("descriptors_test.npy", allow_pickle=True)
+    X_test, _, _ = np.load("descriptors_test_ac.npy", allow_pickle=True)
 
-    X_train, y_train = shuffle_data(X_train, y_train)
-    X_test, y_test = shuffle_data(X_test, y_test)
+    print(ft_names)
+
+    # #X_train, y_train = shuffle_data(X_train, y_train)
+    # #X_test, y_test = shuffle_data(X_test, y_test)
+
+    # print(len(X_train), len(X_test))
+
 
     # CLASSIFIERS
 
@@ -134,7 +147,7 @@ if __name__ == "__main__":
 
     # DIM REDUCTION
 
-    proj_model = PCA(n_components=1000)
+    proj_model = PCA(n_components=300)
     #proj_model = RFE(estimator=clf, n_features_to_select=1000, verbose=True)
     #proj_model = SelectKBest(k=1000)
     #clf = clf.fit(features, y)
