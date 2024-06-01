@@ -7,7 +7,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.feature_selection import RFE, RFECV, SelectKBest
 
-from propy import PyPro, CTD, PseudoAAC
+from propy import PyPro, CTD, PseudoAAC, Autocorrelation
 import pfeature
 
 
@@ -60,22 +60,25 @@ def extract_descriptors(sequences):
         descriptors = {
             # aminoacid composition
             "aminoacid_comp": desc.GetAAComp(),
-            "dipeptide_comp": desc.GetDPComp(),
-            "tripeptide_comp": desc.GetTPComp(),
+            #"dipeptide_comp": desc.GetDPComp(),
+            #"tripeptide_comp": desc.GetTPComp(),
             # autocorrelation
-            "moreau-broto": desc.GetMoreauBrotoAuto(),
-            "moran": desc.GetMoranAuto(),
-            "geary": desc.GetGearyAuto(),
+            "moreau-broto_hidro": Autocorrelation.CalculateNormalizedMoreauBrotoAutoHydrophobicity(sequence),
+            "moran_hidro": Autocorrelation.CalculateMoranAutoHydrophobicity(sequence),
+            "geary_hidro": Autocorrelation.CalculateGearyAutoHydrophobicity(sequence),
+            #"moreau-broto": desc.GetMoreauBrotoAuto(),
+            #"moran": desc.GetMoranAuto(),
+            #"geary": desc.GetGearyAuto(),
             # CTD composition, transition, distribution
-            "ctd_all": desc.GetCTD(),
+            #"ctd_all": desc.GetCTD(),
             # conjoined triad
             #"conjoint_triad": pfeature.CalcConjointTriad(sequence),
             # sequence order
             ##"so_coupling_num": desc.GetSOCN(),
             ##"so_quasi": desc.GetQSO(),
             # pseudo aminoacid composition
-            ##"type_i_paac": desc.GetPAAC(),
-            ##"type_ii_paac": PseudoAAC.GetAPseudoAAC(sequence),
+            #"type_i_paac": desc.GetPAAC(),
+            #"type_ii_paac": PseudoAAC.GetAPseudoAAC(sequence),
         }
 
 
@@ -108,7 +111,7 @@ def shuffle_data(X, y):
 
 if __name__ == "__main__":
 
-    # sequences, y, classes = load_data("data/deeploc_per_protein_train.csv")
+    # sequences, y, classes = load_data("data/deeploc_per_protein_test.csv")
 
     # print(len(sequences))
 
@@ -116,7 +119,7 @@ if __name__ == "__main__":
 
     # print(features.shape)
 
-    # np.save("descriptors_train_ac.npy", [features, desc_names, feature_names], allow_pickle=True)
+    # np.save("descriptors_test_domain.npy", [features, desc_names, feature_names], allow_pickle=True)
 
     # features, desc_names, feature_names = np.load("descriptors_train.npy", allow_pickle=True)
 
@@ -128,7 +131,7 @@ if __name__ == "__main__":
     sequences_test, y_test, classes = load_data("data/deeploc_per_protein_test.csv")
     X_test, _, _ = np.load("descriptors_test_ac.npy", allow_pickle=True)
 
-    print(desc_names)
+    print(ft_names)
 
     # #X_train, y_train = shuffle_data(X_train, y_train)
     # #X_test, y_test = shuffle_data(X_test, y_test)
@@ -139,12 +142,12 @@ if __name__ == "__main__":
     # CLASSIFIERS
 
     #clf = RandomForestClassifier()
-    #clf = SVC(C=2)
-    clf = MLPClassifier()
+    clf = SVC(C=2)
+    #clf = MLPClassifier()
 
     # DIM REDUCTION
 
-    proj_model = PCA(n_components=500)
+    proj_model = PCA(n_components=300)
     #proj_model = RFE(estimator=clf, n_features_to_select=1000, verbose=True)
     #proj_model = SelectKBest(k=1000)
     #clf = clf.fit(features, y)
